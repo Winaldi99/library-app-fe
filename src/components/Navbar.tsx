@@ -1,11 +1,9 @@
 import { Disclosure, Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react"
 import { BellIcon } from "@heroicons/react/16/solid"
 import { NavLink } from "react-router-dom"
+import { useAuth } from "../utils/AuthProvider";
 
 const navigation = [
-	{ name: 'Product', to: '/product', current: true },
-	{ name: 'Recipes', to: '/recipes', current: false },
-	{ name: 'Carts', to: '/carts', current: false },
 	{ name: 'Post', to: '/posts', current: false },
 ]
 
@@ -14,6 +12,7 @@ function classNames(...classes: string[]) {
 }
 
 const Navbar = () => {
+	const { logout } = useAuth();
 	return (
 		<Disclosure as="nav" className="bg-gray-800">
 			<div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
@@ -87,6 +86,10 @@ const Navbar = () => {
 								</MenuItem>
 								<MenuItem>
 									<a
+										onClick={() => {
+											logout();
+										}}
+
 										href="#"
 										className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:outline-hidden"
 									>
@@ -102,4 +105,4 @@ const Navbar = () => {
 	)
 }
 
-export default Navbar
+export default Navbar;
