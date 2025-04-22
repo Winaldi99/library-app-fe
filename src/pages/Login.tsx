@@ -1,127 +1,74 @@
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../utils/AuthProvider";
-import { useForm } from "react-hook-form";
-import axios from "../utils/AxiosInstance";
-import { useMutation } from "@tanstack/react-query";
+import React from "react";
+import { Form, Input, Button, Card, message } from "antd";
+import { Link, useNavigate } from "react-router-dom";
+import { UserOutlined, LockOutlined } from "@ant-design/icons";
 
-export type LoginInput = {
-  email: string;
-  password: string;
-};
-
-const Login = () => {
+const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
-  const {
-    register,
-    handleSubmit,
-    formState: { errors }
-  } = useForm<LoginInput>();
 
-  const handleLogin = async (data: LoginInput) => {
-    try {
-      const res = await axios.post<{ access_token: string }>(
-        "/api/auth/login",
-        {
-          email: data.email,
-          password: data.password
-        }
-      );
-      if (res.data) {
-        login(res.data.access_token);
-      } else {
-        alert("Username or password is wrong");
-      }
-    } catch (err) {
-      alert("Username or password is wrong");
+  const onFinish = (values: any) => {
+    // For demo purposes, we'll just check if the email and password are not empty
+    if (values.email && values.password) {
+      localStorage.setItem("isAuthenticated", "true");
+      message.success("Login successful!");
+      navigate("/books");
+    } else {
+      message.error("Please enter both email and password!");
     }
   };
-  const { mutate, isPending } = useMutation({
-    mutationFn: handleLogin
-  });
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-md">
-        {isPending && (
-          <div className="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center z-20 rounded-2xl">
-            <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        )}
-
-        <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">
-          Login to Your Account
-        </h2>
-
-        <form
-          className="space-y-5"
-          onSubmit={handleSubmit((data) => mutate(data))}
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        minHeight: "100vh",
+        background: "#f0f2f5"
+      }}
+    >
+      <Card
+        title="Login"
+        style={{ width: 400, boxShadow: "0 4px 8px rgba(0,0,0,0.1)" }}
+      >
+        <Form
+          name="login"
+          initialValues={{ remember: true }}
+          onFinish={onFinish}
+          layout="vertical"
         >
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Email address
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              placeholder="you@example.com"
-              {...register("email")}
-            />
-            {errors.email && (
-              <p className="text-red-600 text-xs italic" id="titleError">
-                Email is required.
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              placeholder="••••••••"
-              {...register("password")}
-            />
-            {errors.password && (
-              <p className="text-red-600 text-xs italic" id="titleError">
-                Password is required.
-              </p>
-            )}
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200"
-            >
-              Sign In
-            </button>
-          </div>
-        </form>
-
-        <p className="mt-4 text-center text-sm text-gray-600">
-          Don't have an account?{" "}
-          <a
-            className="text-blue-600 hover:underline"
-            onClick={() => {
-              navigate("/register");
-            }}
+          <Form.Item
+            name="email"
+            rules={[
+              { required: true, message: "Please input your email!" },
+              { type: "email", message: "Please enter a valid email!" }
+            ]}
           >
-            Sign up
-          </a>
-        </p>
-      </div>
+            <Input prefix={<UserOutlined />} placeholder="Email" size="large" />
+          </Form.Item>
+
+          <Form.Item
+            name="password"
+            rules={[{ required: true, message: "Please input your password!" }]}
+          >
+            <Input.Password
+              prefix={<LockOutlined />}
+              placeholder="Password"
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item>
+            <Button type="primary" htmlType="submit" block size="large">
+              Log in
+            </Button>
+          </Form.Item>
+
+          <div style={{ textAlign: "center" }}>
+            Don't have an account? <Link to="/register">Register now!</Link>
+          </div>
+        </Form>
+      </Card>
     </div>
   );
 };

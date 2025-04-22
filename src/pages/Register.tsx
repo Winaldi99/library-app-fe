@@ -1,139 +1,123 @@
-import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
-import axios from "../utils/AxiosInstance";
-import { useMutation } from "@tanstack/react-query";
+import React from "react";
+import { Form, Input, Button, Card, message } from "antd";
+import { UserOutlined, MailOutlined, LockOutlined } from "@ant-design/icons";
+import { Link, useNavigate } from "react-router-dom";
 
-export type RegisterInput = {
-  email: string;
-  username: string;
-  password: string;
-};
-
-const Register = () => {
+const Register: React.FC = () => {
   const navigate = useNavigate();
-  const {
-    register,
-    handleSubmit,
-    formState: { errors }
-  } = useForm<RegisterInput>();
-  const handleRegister = async (data: RegisterInput) => {
-    try {
-      await axios.post("/api/auth/register", {
-        email: data.email,
-        username: data.username,
-        password: data.password
-      });
-      alert("User successfully registered");
-      navigate("/login");
-    } catch (err) {
-      alert("username or email already registered");
+
+  const onFinish = (values: any) => {
+    // Simpan data user di localStorage
+    const users = JSON.parse(localStorage.getItem("users") || "[]");
+    const existingUser = users.find((user: any) => user.email === values.email);
+
+    if (existingUser) {
+      message.error("Email already registered!");
+      return;
     }
+
+    users.push({
+      username: values.username,
+      email: values.email,
+      password: values.password
+    });
+    localStorage.setItem("users", JSON.stringify(users));
+
+    message.success("Registration successful!");
+    navigate("/login");
   };
-  const { mutate, isPending } = useMutation({ mutationFn: handleRegister });
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-md">
-        {isPending && (
-          <div className="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center z-20 rounded-2xl">
-            <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        )}
-        <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">
-          Create an Account
-        </h2>
-
-        <form
-          className="space-y-5"
-          onSubmit={handleSubmit((data) => mutate(data))}
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        minHeight: "100vh",
+        background: "#f0f2f5"
+      }}
+    >
+      <Card
+        title="Register"
+        style={{
+          width: 400,
+          boxShadow: "0 4px 8px rgba(0,0,0,0.1)"
+        }}
+      >
+        <Form
+          name="register"
+          initialValues={{ remember: true }}
+          onFinish={onFinish}
+          layout="vertical"
         >
-          <div>
-            <label
-              htmlFor="username"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Username
-            </label>
-            <input
-              id="username"
-              type="text"
-              required
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              placeholder="yourusername"
-              {...register("username")}
-            />
-            {errors.username && (
-              <p className="text-red-600 text-xs italic" id="titleError">
-                Username is required.
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Email address
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              placeholder="you@example.com"
-              {...register("email")}
-            />
-            {errors.email && (
-              <p className="text-red-600 text-xs italic" id="titleError">
-                Email is required.
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              placeholder="••••••••"
-              {...register("password")}
-            />
-            {errors.password && (
-              <p className="text-red-600 text-xs italic" id="titleError">
-                Password is required.
-              </p>
-            )}
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200"
-            >
-              Register
-            </button>
-          </div>
-        </form>
-
-        <p className="mt-4 text-center text-sm text-gray-600">
-          Already have an account?{" "}
-          <a
-            className="text-blue-600 hover:underline"
-            onClick={() => {
-              navigate("/login");
-            }}
+          <Form.Item
+            name="username"
+            label="Username"
+            rules={[{ required: true, message: "Please input your username!" }]}
           >
-            Login
-          </a>
-        </p>
-      </div>
+            <Input
+              prefix={<UserOutlined />}
+              placeholder="Enter your username"
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="email"
+            label="Email"
+            rules={[
+              { required: true, message: "Please input your email!" },
+              { type: "email", message: "Please enter a valid email!" }
+            ]}
+          >
+            <Input prefix={<MailOutlined />} placeholder="Enter your email" />
+          </Form.Item>
+
+          <Form.Item
+            name="password"
+            label="Password"
+            rules={[{ required: true, message: "Please input your password!" }]}
+          >
+            <Input.Password
+              prefix={<LockOutlined />}
+              placeholder="Enter your password"
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="confirm"
+            label="Confirm Password"
+            dependencies={["password"]}
+            rules={[
+              { required: true, message: "Please confirm your password!" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue("password") === value) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(
+                    new Error("The two passwords do not match!")
+                  );
+                }
+              })
+            ]}
+          >
+            <Input.Password
+              prefix={<LockOutlined />}
+              placeholder="Confirm your password"
+            />
+          </Form.Item>
+
+          <Form.Item>
+            <Button type="primary" htmlType="submit" block>
+              Register
+            </Button>
+          </Form.Item>
+
+          <div style={{ textAlign: "center" }}>
+            Already have an account? <Link to="/login">Login here</Link>
+          </div>
+        </Form>
+      </Card>
     </div>
   );
 };
