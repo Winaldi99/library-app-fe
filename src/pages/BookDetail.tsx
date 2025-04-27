@@ -1,52 +1,46 @@
-import React from "react";
-import { useParams, Link } from "react-router-dom";
-import { Card, Button, Descriptions, Space } from "antd";
-import { ArrowLeftOutlined, EditOutlined } from "@ant-design/icons";
-
-interface Book {
-  id: string;
-  title: string;
-  author: string;
-  category: string;
-  description: string;
-}
+import React, { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { Card, Spin, message } from "antd";
+import { bookAPI } from "../services/api";
 
 const BookDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [book, setBook] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
-  // Contoh data buku (dalam aplikasi nyata, data akan diambil dari API)
-  const book: Book = {
-    id: id || "1",
-    title: "The Great Gatsby",
-    author: "F. Scott Fitzgerald",
-    category: "Fiction",
-    description: "A story of wealth, love, and the American Dream"
-  };
+  useEffect(() => {
+    const fetchBook = async () => {
+      setLoading(true);
+      try {
+        const response = await bookAPI.getById(id!);
+        setBook(response.data);
+      } catch {
+        message.error("Failed to fetch book details!");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBook();
+  }, [id]);
+
+  if (loading) {
+    return <Spin />;
+  }
+
+  if (!book) {
+    return <p>No book found!</p>;
+  }
 
   return (
-    <Card
-      title="Book Details"
-      extra={
-        <Space>
-          <Link to="/books">
-            <Button icon={<ArrowLeftOutlined />}>Back to List</Button>
-          </Link>
-          <Link to={`/books/edit/${id}`}>
-            <Button type="primary" icon={<EditOutlined />}>
-              Edit
-            </Button>
-          </Link>
-        </Space>
-      }
-    >
-      <Descriptions bordered column={1}>
-        <Descriptions.Item label="Title">{book.title}</Descriptions.Item>
-        <Descriptions.Item label="Author">{book.author}</Descriptions.Item>
-        <Descriptions.Item label="Category">{book.category}</Descriptions.Item>
-        <Descriptions.Item label="Description">
-          {book.description}
-        </Descriptions.Item>
-      </Descriptions>
+    <Card title={book.title}>
+      <p>
+        <strong>Author:</strong> {book.author}
+      </p>
+      <p>
+        <strong>Category:</strong> {book.category}
+      </p>
+      <img src={book.imageUrl} alt={book.title} style={{ width: "200px" }} />
     </Card>
   );
 };

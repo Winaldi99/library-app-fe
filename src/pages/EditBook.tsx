@@ -1,113 +1,71 @@
-import React, { useState, useEffect } from "react";
-import { Form, Input, Button, Card, Select, message } from "antd";
+import React, { useEffect, useState } from "react";
+import { Form, Input, Button, message, Select } from "antd";
 import { useNavigate, useParams } from "react-router-dom";
+import { useBookContext } from "../contexts/BookContext";
+import { bookAPI } from "../services/api";
 
-interface Book {
-  id: string;
-  title: string;
-  author: string;
-  category: string;
-  imageUrl: string;
-  isFavorite: boolean;
-}
+const { Option } = Select;
 
 const EditBook: React.FC = () => {
-  const [form] = Form.useForm();
-  const navigate = useNavigate();
+  const { editBook } = useBookContext();
   const { id } = useParams<{ id: string }>();
-  const [book, setBook] = useState<Book | null>(null);
+  const navigate = useNavigate();
+  const [form] = Form.useForm();
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Load book data from localStorage
-    const storedBooks = JSON.parse(localStorage.getItem("books") || "[]");
-    const bookToEdit = storedBooks.find((book: Book) => book.id === id);
+    const fetchBook = async () => {
+      setLoading(true);
+      try {
+        const response = await bookAPI.getById(id!);
+        form.setFieldsValue(response.data);
+      } catch {
+        message.error("Failed to fetch book details!");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    if (bookToEdit) {
-      setBook(bookToEdit);
-      form.setFieldsValue(bookToEdit);
-    } else {
-      message.error("Book not found!");
+    fetchBook();
+  }, [id, form]);
+
+  const onFinish = async (values: any) => {
+    setLoading(true);
+    try {
+      await editBook(id!, values);
+      message.success("Book updated successfully!");
       navigate("/books");
+    } catch {
+      message.error("Failed to update book!");
+    } finally {
+      setLoading(false);
     }
-  }, [id, form, navigate]);
-
-  const onFinish = (values: any) => {
-    // Get existing books from localStorage
-    const storedBooks = JSON.parse(localStorage.getItem("books") || "[]");
-
-    // Update the book
-    const updatedBooks = storedBooks.map((book: Book) =>
-      book.id === id ? { ...book, ...values } : book
-    );
-
-    localStorage.setItem("books", JSON.stringify(updatedBooks));
-    message.success("Book updated successfully!");
-    navigate("/books");
   };
 
-  if (!book) {
-    return null;
-  }
-
   return (
-    <Card title="Edit Book" style={{ maxWidth: 800, margin: "0 auto" }}>
-      <Form
-        form={form}
-        name="editBook"
-        onFinish={onFinish}
-        layout="vertical"
-        initialValues={book}
-      >
-        <Form.Item
-          name="title"
-          label="Title"
-          rules={[{ required: true, message: "Please input the book title!" }]}
-        >
-          <Input placeholder="Enter book title" />
-        </Form.Item>
-
-        <Form.Item
-          name="author"
-          label="Author"
-          rules={[{ required: true, message: "Please input the author name!" }]}
-        >
-          <Input placeholder="Enter author name" />
-        </Form.Item>
-
-        <Form.Item
-          name="category"
-          label="Category"
-          rules={[{ required: true, message: "Please select a category!" }]}
-        >
-          <Select placeholder="Select a category">
-            {JSON.parse(localStorage.getItem("categories") || "[]").map(
-              (category: any) => (
-                <Select.Option key={category.id} value={category.name}>
-                  {category.name}
-                </Select.Option>
-              )
-            )}
-          </Select>
-        </Form.Item>
-
-        <Form.Item
-          name="imageUrl"
-          label="Image URL"
-          rules={[
-            { required: true, message: "Please input the image URL!" },
-            { type: "url", message: "Please enter a valid URL!" }
-          ]}
-        >
-          <Input placeholder="Enter image URL (e.g., https://example.com/image.jpg)" />
-        </Form.Item>
-
-        <Form.Item>
-          <Button type="primary" htmlType="submit">
-            Update Book
-          </Button>
-        </Form.Item>
-      </Form>
-    </Card>
+    <Form layout="vertical" form={form} onFinish={onFinish}>
+      <Form.Item label="Title" name="title" rules={[{ required: true }]}>
+        <Input />
+      </Form.Item>
+      <Form.Item label="Author" name="author" rules={[{ required: true }]}>
+        <Input />
+      </Form.Item>
+      <Form.Item label="Category" name="category" rules={[{ required: true }]}>
+        <Select>
+          <Option value="Fiction">Fiction</Option>
+          <Option value="Non-Fiction">Non-Fiction</Option>
+          <Option value="Science">Science</Option>
+        </Select>
+      </Form.Item>
+      <Form.Item label="Image URL" name="imageUrl">
+        <Input />
+      </Form.Item>
+      <Form.Item>
+        <Button type="primary" htmlType="submit" loading={loading}>
+          Save Changes
+        </Button>
+      </Form.Item>
+    </Form>
   );
 };
 
