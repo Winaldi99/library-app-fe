@@ -1,66 +1,33 @@
-import React, { useState, useEffect } from "react";
-import { Table, Card, Button, Space, message, Image } from "antd";
-import {
-  HeartOutlined,
-  HeartFilled,
-  EditOutlined,
-  DeleteOutlined
-} from "@ant-design/icons";
+import React, { useEffect } from "react";
+import { Table, Button, Space, message } from "antd";
+import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-
-interface Book {
-  id: string;
-  title: string;
-  author: string;
-  category: string;
-  imageUrl: string;
-  isFavorite: boolean;
-}
+import { useBookContext } from "../contexts/BookContext";
 
 const Books: React.FC = () => {
-  const [books, setBooks] = useState<Book[]>([]);
+  const { books, deleteBook, loading, error } = useBookContext();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Load books from localStorage
-    const storedBooks = JSON.parse(localStorage.getItem("books") || "[]");
-    setBooks(storedBooks);
-  }, []);
-
-  const handleToggleFavorite = (id: string) => {
-    const updatedBooks = books.map((book) =>
-      book.id === id ? { ...book, isFavorite: !book.isFavorite } : book
-    );
-    setBooks(updatedBooks);
-    localStorage.setItem("books", JSON.stringify(updatedBooks));
-    message.success("Book favorite status updated!");
-  };
+    if (error) {
+      message.error(error);
+    }
+  }, [error]);
 
   const handleEdit = (id: string) => {
     navigate(`/books/edit/${id}`);
   };
 
-  const handleDelete = (id: string) => {
-    const updatedBooks = books.filter((book) => book.id !== id);
-    setBooks(updatedBooks);
-    localStorage.setItem("books", JSON.stringify(updatedBooks));
-    message.success("Book deleted successfully!");
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteBook(id);
+      message.success("Book deleted successfully!");
+    } catch {
+      message.error("Failed to delete book!");
+    }
   };
 
   const columns = [
-    {
-      title: "Cover",
-      dataIndex: "imageUrl",
-      key: "imageUrl",
-      render: (imageUrl: string) => (
-        <Image
-          src={imageUrl}
-          alt="Book cover"
-          style={{ width: 50, height: 75, objectFit: "cover" }}
-          fallback="https://via.placeholder.com/50x75?text=No+Image"
-        />
-      )
-    },
     {
       title: "Title",
       dataIndex: "title",
@@ -79,19 +46,8 @@ const Books: React.FC = () => {
     {
       title: "Action",
       key: "action",
-      render: (_: any, record: Book) => (
+      render: (_: any, record: any) => (
         <Space size="middle">
-          <Button
-            type="text"
-            icon={
-              record.isFavorite ? (
-                <HeartFilled style={{ color: "red" }} />
-              ) : (
-                <HeartOutlined />
-              )
-            }
-            onClick={() => handleToggleFavorite(record.id)}
-          />
           <Button
             type="primary"
             icon={<EditOutlined />}
@@ -113,21 +69,13 @@ const Books: React.FC = () => {
   ];
 
   return (
-    <Card
-      title="Books"
-      extra={
-        <Button type="primary" onClick={() => navigate("/books/add")}>
-          Add New Book
-        </Button>
-      }
-    >
-      <Table
-        dataSource={books}
-        columns={columns}
-        rowKey="id"
-        pagination={{ pageSize: 10 }}
-      />
-    </Card>
+    <Table
+      dataSource={books}
+      columns={columns}
+      rowKey="id"
+      loading={loading}
+      pagination={{ pageSize: 10 }}
+    />
   );
 };
 

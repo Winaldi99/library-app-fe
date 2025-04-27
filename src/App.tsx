@@ -92,8 +92,7 @@ const AppContent: React.FC = () => {
         </Routes>
       </Content>
       <Footer style={{ textAlign: "center" }}>
-        Digital Book Management System ©{new Date().getFullYear()} Created with
-        Ant Design
+        Digital Book Management System ©{new Date().getFullYear()} Created by Winaldi
       </Footer>
     </Layout>
   );

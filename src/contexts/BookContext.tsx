@@ -1,20 +1,23 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { bookAPI } from "../services/api";
 
 interface Book {
   id: string;
   title: string;
   author: string;
-  cover: string;
+  imageUrl: string;
   category: string;
   isFavorite: boolean;
 }
 
 interface BookContextType {
   books: Book[];
-  addBook: (book: Omit<Book, "id" | "isFavorite">) => void;
-  editBook: (id: string, book: Partial<Book>) => void;
-  deleteBook: (id: string) => void;
-  toggleFavorite: (id: string) => void;
+  loading: boolean;
+  error: string | null;
+  addBook: (book: Omit<Book, "id" | "isFavorite">) => Promise<void>;
+  editBook: (id: string, book: Partial<Book>) => Promise<void>;
+  deleteBook: (id: string) => Promise<void>;
+  toggleFavorite: (id: string) => Promise<void>;
 }
 
 const BookContext = createContext<BookContextType | undefined>(undefined);
@@ -23,38 +26,67 @@ export const BookProvider: React.FC<{ children: React.ReactNode }> = ({
   children
 }) => {
   const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const addBook = (book: Omit<Book, "id" | "isFavorite">) => {
-    const newBook: Book = {
-      id: Date.now().toString(),
-      ...book,
-      isFavorite: false
-    };
-    setBooks([...books, newBook]);
+  useEffect(() => {
+    fetchBooks();
+  }, []);
+
+  const fetchBooks = async () => {
+    try {
+      setLoading(true);
+      const response = await bookAPI.getAll();
+      setBooks(response.data);
+    } catch (err) {
+      setError("Failed to fetch books");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const editBook = (id: string, updatedBook: Partial<Book>) => {
-    setBooks(
-      books.map((book) => (book.id === id ? { ...book, ...updatedBook } : book))
-    );
+  const addBook = async (book: Omit<Book, "id" | "isFavorite">) => {
+    try {
+      const response = await bookAPI.create(book);
+      setBooks([...books, response.data]);
+    } catch (err) {
+      setError("Failed to add book");
+    }
   };
 
-  const deleteBook = (id: string) => {
-    setBooks(books.filter((book) => book.id !== id));
+  const editBook = async (id: string, updatedBook: Partial<Book>) => {
+    try {
+      const response = await bookAPI.update(id, updatedBook);
+      setBooks(books.map((book) => (book.id === id ? response.data : book)));
+    } catch (err) {
+      setError("Failed to update book");
+    }
   };
 
-  const toggleFavorite = (id: string) => {
-    setBooks(
-      books.map((book) =>
-        book.id === id ? { ...book, isFavorite: !book.isFavorite } : book
-      )
-    );
+  const deleteBook = async (id: string) => {
+    try {
+      await bookAPI.delete(id);
+      setBooks(books.filter((book) => book.id !== id));
+    } catch (err) {
+      setError("Failed to delete book");
+    }
+  };
+
+  const toggleFavorite = async (id: string) => {
+    try {
+      const response = await bookAPI.toggleFavorite(id);
+      setBooks(books.map((book) => (book.id === id ? response.data : book)));
+    } catch (err) {
+      setError("Failed to toggle favorite");
+    }
   };
 
   return (
     <BookContext.Provider
       value={{
         books,
+        loading,
+        error,
         addBook,
         editBook,
         deleteBook,
